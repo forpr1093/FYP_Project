@@ -195,6 +195,7 @@ export default defineComponent({
     refreshMap() {
       this.originMarker.remove();
       this.addOrigin();
+      this.recalculateRoutes();
     },
   },
   mounted() {

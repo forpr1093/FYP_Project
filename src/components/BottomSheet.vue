@@ -7,6 +7,8 @@
     :breakpoints="[0.25, 0.4]"
     :backdrop-dismiss="false"
     :backdrop-breakpoint="0.5"
+    class="wrapper"
+    
   >
     <ion-content class="ion-padding">
       <ion-searchbar placeholder="Search"></ion-searchbar>
@@ -17,12 +19,17 @@
         >Add Origin</ion-button
       >
       <ion-reorder-group :disabled="false" @ionItemReorder="onReorder($event)">
-        <ion-item v-for="data in destinations" :key="data.id">
-          <ion-label>
-            {{ data.title }}
-          </ion-label>
-          <ion-reorder slot="end"></ion-reorder>
-        </ion-item>
+        <ion-item-sliding v-for="data in destinations" :key="data.id">
+          <ion-item>
+            <ion-label>
+              {{ data.title }}
+            </ion-label>
+            <ion-reorder slot="end"></ion-reorder>
+          </ion-item>
+          <ion-item-options>
+            <ion-item-option color="danger" expandable>Delete</ion-item-option>
+          </ion-item-options>
+        </ion-item-sliding>
       </ion-reorder-group>
     </ion-content>
   </ion-modal>
@@ -90,4 +97,5 @@ export default defineComponent({
 .origin-button {
   margin: 10px auto;
 }
+
 </style>
