@@ -32,11 +32,13 @@ import "./theme/core.css";
 import "./theme/maps.css";
 // import "https://api.tomtom.com/maps-sdk-for-web/cdn/5.x/5.37.2/maps/maps.css";
 import BaseLayout from "./components/base/BaseLayout.vue";
+import BottomSheet from "./components/BottomSheet.vue"
 import store from "./store";
 
 const app = createApp(App).use(IonicVue).use(router).use(store);
 
 app.component("base-layout", BaseLayout);
+app.component("bottom-sheet", BottomSheet);
 
 router.isReady().then(() => {
   app.mount("#app");

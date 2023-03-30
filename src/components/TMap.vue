@@ -10,15 +10,28 @@ import ttapi from "@tomtom-international/web-sdk-services";
 import { tsTypeParameterInstantiation } from "@babel/types";
 
 export default defineComponent({
+  props: ["origin"],
   data() {
     return {
       map: null,
       // store the origin coordinate
-      coor: { lng: 0, lat: 0 },
+      coor: this.origin,
       // array of destination
+      originMarker: [],
       destination: [],
-      markers: [],
+      markers: this.$store.getters["destinations/destinations"],
+      markerCounter: 1,
     };
+  },
+  watch: {
+    // watcher that trigger when value of origin props is changed
+    origin: {
+      handler(newVal, oldVal) {
+        this.coor = newVal;
+        this.refreshMap();
+      },
+      deep: true,
+    },
   },
   methods: {
     convertToPoints(lngLat) {
@@ -31,7 +44,7 @@ export default defineComponent({
     },
 
     // add marker to map
-    addMarker() {
+    addOrigin() {
       // create a html element for marker
       const element = document.createElement("div");
       element.className = "marker";
@@ -40,14 +53,19 @@ export default defineComponent({
         draggable: true,
         element: element,
       })
-        .setLngLat([101.71366, 3.1466])
+        .setLngLat([this.coor.lng, this.coor.lat])
         .addTo(this.map);
+
+      this.originMarker = marker;
+      // this.recalculateRoutes();
 
       // marker on drag listener
       marker.on("dragend", () => {
         const lngLat = marker.getLngLat();
         // store the modified coordinate
         this.coor = { lng: lngLat.lng, lat: lngLat.lat };
+        this.recalculateRoutes();
+        this.originMarker = marker;
       });
     },
 
@@ -66,8 +84,18 @@ export default defineComponent({
         .setLngLat(lngLat)
         .setPopup(popup)
         .addTo(this.map);
+      this.markers.push({
+        id: this.markerCounter,
+        title: marker.getLngLat(),
+        marker: marker,
+      });
+      //call the action to update the array in store
+      this.$store.dispatch("destinations/addToDestinations", this.markers);
+
+      // increase the markerCounter (id in list)
       this.markerCounter += 1;
-      this.markers.push(marker);
+
+      this.recalculateRoutes();
     },
 
     sortDestinations(location) {
@@ -78,7 +106,8 @@ export default defineComponent({
       const callParameters = {
         key: "0jVsF2y6TOdEGvkVUOvaswXIoSIzwiQ6",
         destinations: pointsForDestinations,
-        origins: [this.convertToPoints({ lng: 101.71366, lat: 3.1466 })],
+        // origins: [this.convertToPoints({ lng: 101.71366, lat: 3.1466 })],
+        origins: [this.convertToPoints(this.coor)],
       };
 
       return new Promise((resolve, reject) => {
@@ -116,7 +145,7 @@ export default defineComponent({
           data: geoJson,
         },
         paint: {
-          "line-color": "red",
+          "line-color": "cyan",
           "line-width": 6,
         },
       });
@@ -124,7 +153,8 @@ export default defineComponent({
 
     recalculateRoutes() {
       this.sortDestinations(this.destination).then((sorted) => {
-        sorted.unshift({ lng: 101.71366, lat: 3.1466 });
+        // sorted.unshift({ lng: 101.71366, lat: 3.1466 });
+        sorted.unshift(this.coor);
 
         ttapi.services
           .calculateRoute({
@@ -138,29 +168,38 @@ export default defineComponent({
       });
     },
 
+    // display the map
     displayMap() {
       const map = tt.map({
         key: "0jVsF2y6TOdEGvkVUOvaswXIoSIzwiQ6",
         container: "map", // Container ID
-        center: [101.71366, 3.1466],
+        center: [this.coor.lng, this.coor.lat],
         zoom: 12,
         stylesVisibility: {
           trafficFlow: true,
           trafficIncidents: true,
         },
       });
+      // set map object references
       this.map = Object.freeze(map);
+      // when the map is loaded, resize it based on the screen size
       map.on("load", () => map.resize());
+      // when the map is clicked, add marker
       map.on("click", (e) => {
         this.destination.push(e.lngLat);
         this.addDestination(e.lngLat);
-        this.recalculateRoutes();
       });
+    },
+
+    // method to refresh map
+    refreshMap() {
+      this.originMarker.remove();
+      this.addOrigin();
     },
   },
   mounted() {
     this.displayMap();
-    this.addMarker();
+    this.addOrigin();
   },
 });
 </script>
@@ -182,8 +221,8 @@ export default defineComponent({
 .destination-marker {
   background-image: url("https://cdn-icons-png.flaticon.com/512/447/447031.png");
   background-size: cover;
-  width: 100px;
-  height: 100px;
+  width: 20px;
+  height: 20px;
   background-color: yellow;
   border-radius: 20px;
   border: solid 3px darkblue;
