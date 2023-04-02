@@ -3,30 +3,33 @@
 </template>
 
 <script lang="ts">
-import { onMounted, reactive, ref } from "vue";
 import { defineComponent } from "vue";
 import tt from "@tomtom-international/web-sdk-maps";
 import ttapi from "@tomtom-international/web-sdk-services";
-import { tsTypeParameterInstantiation } from "@babel/types";
+import { mapGetters } from "vuex";
 
 export default defineComponent({
   props: ["origin"],
+  computed: {
+    ...mapGetters({
+      destinations: "destinations/destinations",
+    }),
+  },
   data() {
     return {
       map: null,
       // store the origin coordinate
       coor: this.origin,
       // array of destination
-      originMarker: [],
-      destination: [],
-      markers: this.$store.getters["destinations/destinations"],
+      originMarker: null,
       markerCounter: 1,
+      editable: false,
     };
   },
   watch: {
     // watcher that trigger when value of origin props is changed
     origin: {
-      handler(newVal, oldVal) {
+      handler(newVal) {
         this.coor = newVal;
         this.refreshMap();
       },
@@ -34,6 +37,7 @@ export default defineComponent({
     },
   },
   methods: {
+    // method to convert to format that the api can read
     convertToPoints(lngLat) {
       return {
         point: {
@@ -48,6 +52,7 @@ export default defineComponent({
       // create a html element for marker
       const element = document.createElement("div");
       element.className = "marker";
+
       // use tomtom api to declare new marker
       const marker = new tt.Marker({
         draggable: true,
@@ -64,7 +69,7 @@ export default defineComponent({
         const lngLat = marker.getLngLat();
         // store the modified coordinate
         this.coor = { lng: lngLat.lng, lat: lngLat.lat };
-        this.recalculateRoutes();
+        this.recalculateRoutes(this.destinations);
         this.originMarker = marker;
       });
     },
@@ -72,52 +77,57 @@ export default defineComponent({
     // add destination marker
     addDestination(lngLat) {
       // new html element to make the marker visible
-      const popup = new tt.Popup({ offset: 30 }).setText("drag to remove");
+      const popup = new tt.Popup({ closeButton: false }).setHTML(
+        '<b style="color:blue">Speedy\'s pizza</b>'
+      );
       const element = document.createElement("div");
       element.className = "destination-marker";
 
       const marker = new tt.Marker({
-        draggable: true,
+        draggable: false,
         element: element,
         anchor: "bottom",
       })
         .setLngLat(lngLat)
         .setPopup(popup)
         .addTo(this.map);
-      this.markers.push({
+      // push new marker into the arr
+      const temp = this.destinations;
+      temp.push({
         id: this.markerCounter,
         title: marker.getLngLat(),
         marker: marker,
       });
+
       //call the action to update the array in store
-      this.$store.dispatch("destinations/addToDestinations", this.markers);
+      this.$store.dispatch("destinations/addToDestinations", temp);
 
       // increase the markerCounter (id in list)
       this.markerCounter += 1;
 
-      this.recalculateRoutes();
+      this.recalculateRoutes(this.destinations);
     },
 
-    sortDestinations(location) {
-      const pointsForDestinations = location.map((destination) => {
-        return this.convertToPoints(destination);
+    sortDestinations(markers) {
+      const pointsForDestinations = markers.map((item) => {
+        // convert all coordinates data to other format
+        return this.convertToPoints(item.marker.getLngLat());
       });
 
       const callParameters = {
         key: "0jVsF2y6TOdEGvkVUOvaswXIoSIzwiQ6",
         destinations: pointsForDestinations,
-        // origins: [this.convertToPoints({ lng: 101.71366, lat: 3.1466 })],
         origins: [this.convertToPoints(this.coor)],
       };
 
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         ttapi.services
           .matrixRouting(callParameters)
           .then((matrixAPIResults) => {
             const results = matrixAPIResults.matrix[0];
             const resultsArray = results.map((result, index) => {
               return {
-                location: location[index],
+                location: markers[index].marker.getLngLat(),
                 drivingtime: result.response.routeSummary.travelTimeInSeconds,
               };
             });
@@ -128,6 +138,10 @@ export default defineComponent({
               return result.location;
             });
             resolve(sortedLocations);
+          })
+          .catch(() => {
+            this.map.removeLayer("route");
+            this.map.removeSource("route");
           });
       });
     },
@@ -146,14 +160,14 @@ export default defineComponent({
         },
         paint: {
           "line-color": "cyan",
-          "line-width": 6,
+          "line-width": 4,
         },
       });
     },
 
-    recalculateRoutes() {
-      this.sortDestinations(this.destination).then((sorted) => {
-        // sorted.unshift({ lng: 101.71366, lat: 3.1466 });
+    recalculateRoutes(destinations) {
+      this.sortDestinations(destinations).then((sorted) => {
+        console.log(sorted);
         sorted.unshift(this.coor);
 
         ttapi.services
@@ -165,6 +179,19 @@ export default defineComponent({
             const geoJson = routeData.toGeoJson();
             this.drawRoute(geoJson, this.map);
           });
+      });
+    },
+
+    // toggle edit mode
+    toggleEdit() {
+      this.editable = !this.editable;
+    },
+
+    // create an interface to call the methods from the outside of the component
+    emitInterface() {
+      this.$emit("interface", {
+        recalculateRoute: () => this.recalculateRoutes(this.destinations),
+        toggleEdit: () => this.toggleEdit(),
       });
     },
 
@@ -183,11 +210,13 @@ export default defineComponent({
       // set map object references
       this.map = Object.freeze(map);
       // when the map is loaded, resize it based on the screen size
+
       map.on("load", () => map.resize());
       // when the map is clicked, add marker
       map.on("click", (e) => {
-        this.destination.push(e.lngLat);
-        this.addDestination(e.lngLat);
+        if (this.editable) {
+          this.addDestination(e.lngLat);
+        }
       });
     },
 
@@ -195,12 +224,13 @@ export default defineComponent({
     refreshMap() {
       this.originMarker.remove();
       this.addOrigin();
-      this.recalculateRoutes();
+      this.recalculateRoutes(this.destinations);
     },
   },
   mounted() {
     this.displayMap();
     this.addOrigin();
+    this.emitInterface();
   },
 });
 </script>

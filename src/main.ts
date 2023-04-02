@@ -2,7 +2,7 @@
 //Program Name: Route
 // Description: Route Planning Mobile Application
 // First written on: 10 March 2023
-// Edited on: 
+// Edited on:
 
 import { createApp } from "vue";
 import App from "./App.vue";
@@ -32,14 +32,24 @@ import "./theme/core.css";
 import "./theme/maps.css";
 // import "https://api.tomtom.com/maps-sdk-for-web/cdn/5.x/5.37.2/maps/maps.css";
 import BaseLayout from "./components/base/BaseLayout.vue";
-import BottomSheet from "./components/BottomSheet.vue"
+import BottomSheet from "./components/BottomSheet.vue";
+import SearchModal from "./components/SearchModal.vue";
+import VueGoogleMaps from "@fawmi/vue-google-maps";
 import store from "./store";
 
 const app = createApp(App).use(IonicVue).use(router).use(store);
 
 app.component("base-layout", BaseLayout);
 app.component("bottom-sheet", BottomSheet);
+app.component("search-modal", SearchModal);
 
 router.isReady().then(() => {
-  app.mount("#app");
+  app
+    .use(VueGoogleMaps, {
+      load: {
+        key: "AIzaSyBiGgsdmA1Z-7BD5npa_-LvOGsJMbjxJpw",
+        libraries: "places",
+      },
+    })
+    .mount("#app");
 });

@@ -4,35 +4,51 @@
     ref="modal"
     :isOpen="true"
     :initial-breakpoint="0.4"
-    :breakpoints="[0.25, 0.4]"
+    :breakpoints="[0.25, 0.4, 0.5]"
     :backdrop-dismiss="false"
     :backdrop-breakpoint="0.5"
     class="wrapper"
-    
   >
     <ion-content class="ion-padding">
       <ion-searchbar placeholder="Search"></ion-searchbar>
+      <ion-item color="none" lines="none">
+        <ion-text slot="end">Edit Mode</ion-text>
+        <ion-toggle
+          slot="end"
+          class="toggle"
+          @ionChange="this.toggle($event)"
+        ></ion-toggle>
+      </ion-item>
       <ion-button
         expand="block"
         class="origin-button"
-        @click="this.onSetOrigin()"
+        @click="() => (this.isModalOpen = true)"
         >Add Origin</ion-button
       >
-      <ion-reorder-group :disabled="false" @ionItemReorder="onReorder($event)">
+      <ion-reorder-group
+        :disabled="!this.reorderable"
+        @ionItemReorder="onReorder($event)"
+      >
         <ion-item-sliding v-for="data in destinations" :key="data.id">
           <ion-item>
             <ion-label>
-              {{ data.title }}
+              test
             </ion-label>
             <ion-reorder slot="end"></ion-reorder>
           </ion-item>
-          <ion-item-options>
-            <ion-item-option color="danger" expandable>Delete</ion-item-option>
+          <ion-item-options @ionSwipe="this.onDelete(data)">
+            <ion-item-option
+              color="danger"
+              expandable
+              @click="this.onDelete($event)"
+              >Delete</ion-item-option
+            >
           </ion-item-options>
         </ion-item-sliding>
       </ion-reorder-group>
     </ion-content>
   </ion-modal>
+  <search-modal :isOpen="this.isModalOpen"></search-modal>
 </template>
 
 <script lang="ts">
@@ -45,6 +61,8 @@ import {
   IonLabel,
   IonSearchbar,
   IonButton,
+  IonToggle,
+  IonText,
 } from "@ionic/vue";
 import { defineComponent } from "vue";
 import { mapGetters } from "vuex";
@@ -59,9 +77,11 @@ export default defineComponent({
     IonReorderGroup,
     IonLabel,
     IonButton,
+    IonToggle,
+    IonText,
   },
   // receive addMarker method from main page
-  props: ["setOrigin"],
+  props: ["setOrigin", "recalculateRoute", "toggleEdit"],
 
   computed: {
     ...mapGetters({
@@ -69,7 +89,10 @@ export default defineComponent({
     }),
   },
   data() {
-    return {};
+    return {
+      reorderable: false,
+      isModalOpen: false,
+    };
   },
   methods: {
     onReorder(event: CustomEvent) {
@@ -82,6 +105,8 @@ export default defineComponent({
       // call the action to update the array
       this.$store.dispatch("destinations/addToDestinations", destArr);
 
+      // redraw the route
+      this.recalculateRoute();
       // handle the complete action of ionic reorder group
       // so it can be dragged again
       event.detail.complete();
@@ -90,6 +115,29 @@ export default defineComponent({
     onSetOrigin() {
       this.setOrigin(101.72366, 3.1466);
     },
+    // fire to delete the destination
+    onDelete(data) {
+      let destArr = this.destinations;
+      // remove the marker from map
+      destArr.map((item) => {
+        if (item.id == data.id) {
+          item.marker.remove();
+        }
+      });
+      // filter out the marker with same id
+      destArr = destArr.filter((item) => item.id != data.id);
+      // update the array
+      this.$store.dispatch("destinations/addToDestinations", destArr);
+      // draw new route with the new array
+      this.recalculateRoute();
+      // destArr = destArr.filter((marker) => marker.id != data.id);
+      // remove the draggedItem from the array (1 means 1 item from that index)
+    },
+
+    toggle() {
+      this.toggleEdit();
+      this.reorderable = !this.reorderable;
+    },
   },
 });
 </script>
@@ -97,5 +145,4 @@ export default defineComponent({
 .origin-button {
   margin: 10px auto;
 }
-
 </style>

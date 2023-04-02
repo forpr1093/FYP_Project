@@ -14,7 +14,6 @@ export default {
   actions: {
     addToDestinations(context, payload) {
       const destinations = payload;
-      console.log(payload)
       context.commit("UPDATE_DESTINATIONS", destinations);
     },
   },

@@ -13,12 +13,15 @@
         </ion-label>
       </ion-item>
     </ion-list> -->
-  <TMap :origin="this.origin" />
-  <bottom-sheet :setOrigin="this.setOrigin" />
+  <TMap :origin="this.origin" @interface="this.getMapInterface" />
+  <bottom-sheet
+    :setOrigin="this.setOrigin"
+    :recalculateRoute="this.recalculateRoute"
+    :toggleEdit="this.toggleEdit"
+  />
 </template>
 
 <script lang="ts">
-import { IonList, IonItem, IonImg, IonThumbnail, IonLabel } from "@ionic/vue";
 import { defineComponent, ref } from "vue";
 import TMap from "../components/TMap.vue";
 // defineCOmponent to prevent type error of $store
@@ -43,9 +46,20 @@ export default defineComponent({
       this.origin.lat = lat;
       // this.$emit("onOriginChange", [1.41, 2.12]);
     },
-    updateDestinations(destinations) {
-      this.destinations = destinations;
-      console.log(this.destinations);
+
+    // assign the interface
+    getMapInterface(mapInterface) {
+      this.mapInterface = mapInterface;
+    },
+
+    // cal the recalculateRoute method in Map component
+    recalculateRoute() {
+      this.mapInterface.recalculateRoute();
+    },
+
+    // toggle edit mode
+    toggleEdit() {
+      this.mapInterface.toggleEdit();
     },
   },
   computed: {
