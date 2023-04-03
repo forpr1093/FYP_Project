@@ -13,9 +13,10 @@
         </ion-label>
       </ion-item>
     </ion-list> -->
-  <TMap :origin="this.origin" @interface="this.getMapInterface" />
+  <TMap @interface="this.getMapInterface" />
   <bottom-sheet
     :setOrigin="this.setOrigin"
+    :setDestination="this.setDestination"
     :recalculateRoute="this.recalculateRoute"
     :toggleEdit="this.toggleEdit"
   />
@@ -36,17 +37,10 @@ export default defineComponent({
   },
   data() {
     return {
-      origin: ref({ lng: 101.71366, lat: 3.1466 }),
       destinations: null,
     };
   },
   methods: {
-    setOrigin(lng, lat) {
-      this.origin.lng = lng;
-      this.origin.lat = lat;
-      // this.$emit("onOriginChange", [1.41, 2.12]);
-    },
-
     // assign the interface
     getMapInterface(mapInterface) {
       this.mapInterface = mapInterface;
@@ -60,6 +54,14 @@ export default defineComponent({
     // toggle edit mode
     toggleEdit() {
       this.mapInterface.toggleEdit();
+    },
+
+    // add origin
+    setOrigin(origin) {
+      this.mapInterface.addOrigin(origin);
+    },
+    setDestination(destination) {
+      this.mapInterface.addDestination(destination);
     },
   },
   computed: {

@@ -9,7 +9,6 @@ import ttapi from "@tomtom-international/web-sdk-services";
 import { mapGetters } from "vuex";
 
 export default defineComponent({
-  props: ["origin"],
   computed: {
     ...mapGetters({
       destinations: "destinations/destinations",
@@ -19,22 +18,12 @@ export default defineComponent({
     return {
       map: null,
       // store the origin coordinate
-      coor: this.origin,
+      coor: null,
       // array of destination
       originMarker: null,
       markerCounter: 1,
       editable: false,
     };
-  },
-  watch: {
-    // watcher that trigger when value of origin props is changed
-    origin: {
-      handler(newVal) {
-        this.coor = newVal;
-        this.refreshMap();
-      },
-      deep: true,
-    },
   },
   methods: {
     // method to convert to format that the api can read
@@ -48,26 +37,35 @@ export default defineComponent({
     },
 
     // add marker to map
-    addOrigin() {
+    addOrigin(origin) {
       // create a html element for marker
       const element = document.createElement("div");
       element.className = "marker";
 
+      if (this.originMarker) {
+        this.originMarker.remove();
+      }
       // use tomtom api to declare new marker
       const marker = new tt.Marker({
         draggable: true,
         element: element,
       })
-        .setLngLat([this.coor.lng, this.coor.lat])
+        .setLngLat([origin.lng, origin.lat])
         .addTo(this.map);
 
       this.originMarker = marker;
+      // add origin data to store
+      this.$store.dispatch("destinations/addOrigin", marker.getLngLat());
+
+      // set to local variable
+      this.coor = { lng: origin.lng, lat: origin.lat };
       // this.recalculateRoutes();
 
       // marker on drag listener
       marker.on("dragend", () => {
         const lngLat = marker.getLngLat();
         // store the modified coordinate
+        this.$store.dispatch("destinations/addOrigin", marker.getLngLat());
         this.coor = { lng: lngLat.lng, lat: lngLat.lat };
         this.recalculateRoutes(this.destinations);
         this.originMarker = marker;
@@ -111,6 +109,7 @@ export default defineComponent({
     sortDestinations(markers) {
       const pointsForDestinations = markers.map((item) => {
         // convert all coordinates data to other format
+        console.log(markers);
         return this.convertToPoints(item.marker.getLngLat());
       });
 
@@ -140,8 +139,12 @@ export default defineComponent({
             resolve(sortedLocations);
           })
           .catch(() => {
-            this.map.removeLayer("route");
-            this.map.removeSource("route");
+            // catch error when there is only marker on map
+            // remove all routes
+            if (this.map.getLayer("route")) {
+              this.map.removeLayer("route");
+              this.map.removeSource("route");
+            }
           });
       });
     },
@@ -192,6 +195,8 @@ export default defineComponent({
       this.$emit("interface", {
         recalculateRoute: () => this.recalculateRoutes(this.destinations),
         toggleEdit: () => this.toggleEdit(),
+        addOrigin: (coordinates) => this.addOrigin(coordinates),
+        addDestination: (coordinates) => this.addDestination(coordinates),
       });
     },
 
@@ -200,7 +205,7 @@ export default defineComponent({
       const map = tt.map({
         key: "0jVsF2y6TOdEGvkVUOvaswXIoSIzwiQ6",
         container: "map", // Container ID
-        center: [this.coor.lng, this.coor.lat],
+        center: [101.6841, 3.1319],
         zoom: 12,
         stylesVisibility: {
           trafficFlow: true,
@@ -216,6 +221,7 @@ export default defineComponent({
       map.on("click", (e) => {
         if (this.editable) {
           this.addDestination(e.lngLat);
+          map.easeTo({ center: e.lngLat });
         }
       });
     },
@@ -223,13 +229,12 @@ export default defineComponent({
     // method to refresh map
     refreshMap() {
       this.originMarker.remove();
-      this.addOrigin();
       this.recalculateRoutes(this.destinations);
     },
   },
   mounted() {
     this.displayMap();
-    this.addOrigin();
+    this.addOrigin({ lat: 3.1319, lng: 101.6841 });
     this.emitInterface();
   },
 });

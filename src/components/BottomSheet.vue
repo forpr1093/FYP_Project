@@ -3,8 +3,8 @@
   <ion-modal
     ref="modal"
     :isOpen="true"
-    :initial-breakpoint="0.4"
-    :breakpoints="[0.25, 0.4, 0.5]"
+    :initial-breakpoint="0.5"
+    :breakpoints="[0.25, 0.4, 0.5, 0.8]"
     :backdrop-dismiss="false"
     :backdrop-breakpoint="0.5"
     class="wrapper"
@@ -22,33 +22,49 @@
       <ion-button
         expand="block"
         class="origin-button"
-        @click="() => (this.isModalOpen = true)"
-        >Add Origin</ion-button
+        @click="this.openSearchModal('origin')"
+        >Set Origin</ion-button
       >
-      <ion-reorder-group
-        :disabled="!this.reorderable"
-        @ionItemReorder="onReorder($event)"
+      <ion-content style="height: 25%" :scroll-events="true">
+        <ion-text class="centered-text" v-if="this.destinations.length == 0">{{
+          this.origin
+        }}</ion-text>
+        <ion-text class="centered-text" v-if="this.destinations.length == 0"
+          >No destination has been added.</ion-text
+        >
+        <ion-list v-else>
+          <ion-reorder-group
+            :disabled="!this.reorderable"
+            @ionItemReorder="onReorder($event)"
+          >
+            <ion-item-sliding v-for="data in destinations" :key="data.id">
+              <ion-item>
+                <ion-label> test </ion-label>
+                <ion-reorder slot="end"></ion-reorder>
+              </ion-item>
+              <ion-item-options @ionSwipe="this.onDelete(data)">
+                <ion-item-option
+                  color="danger"
+                  expandable
+                  @click="this.onDelete(data)"
+                >
+                  Delete
+                </ion-item-option>
+              </ion-item-options>
+            </ion-item-sliding>
+          </ion-reorder-group>
+        </ion-list>
+      </ion-content>
+
+      <ion-button
+        v-if="this.reorderable"
+        expand="block"
+        class="origin-button"
+        @click="this.openSearchModal('destination')"
+        >Add Destination</ion-button
       >
-        <ion-item-sliding v-for="data in destinations" :key="data.id">
-          <ion-item>
-            <ion-label>
-              test
-            </ion-label>
-            <ion-reorder slot="end"></ion-reorder>
-          </ion-item>
-          <ion-item-options @ionSwipe="this.onDelete(data)">
-            <ion-item-option
-              color="danger"
-              expandable
-              @click="this.onDelete($event)"
-              >Delete</ion-item-option
-            >
-          </ion-item-options>
-        </ion-item-sliding>
-      </ion-reorder-group>
     </ion-content>
   </ion-modal>
-  <search-modal :isOpen="this.isModalOpen"></search-modal>
 </template>
 
 <script lang="ts">
@@ -63,9 +79,12 @@ import {
   IonButton,
   IonToggle,
   IonText,
+  modalController,
+  IonList,
 } from "@ionic/vue";
 import { defineComponent } from "vue";
 import { mapGetters } from "vuex";
+import SearchModal from "./SearchModal.vue";
 
 export default defineComponent({
   components: {
@@ -79,13 +98,15 @@ export default defineComponent({
     IonButton,
     IonToggle,
     IonText,
+    IonList,
   },
   // receive addMarker method from main page
-  props: ["setOrigin", "recalculateRoute", "toggleEdit"],
+  props: ["setOrigin", "setDestination", "recalculateRoute", "toggleEdit"],
 
   computed: {
     ...mapGetters({
       destinations: "destinations/destinations",
+      origin: "destinations/origin",
     }),
   },
   data() {
@@ -111,9 +132,13 @@ export default defineComponent({
       // so it can be dragged again
       event.detail.complete();
     },
-    // call the addMarker method from main page
-    onSetOrigin() {
-      this.setOrigin(101.72366, 3.1466);
+    // call the setOrigin method from main page
+    onSetOrigin(coordinates) {
+      this.setOrigin(coordinates);
+    },
+    // call the setDestination method from main page
+    onSetDestination(coordinates) {
+      this.setDestination(coordinates);
     },
     // fire to delete the destination
     onDelete(data) {
@@ -138,11 +163,38 @@ export default defineComponent({
       this.toggleEdit();
       this.reorderable = !this.reorderable;
     },
+    async openSearchModal(choice) {
+      const searchModal = await modalController.create({
+        component: SearchModal,
+        componentProps: {
+          choice: choice,
+        },
+      });
+      searchModal.present();
+
+      const { data, role } = await searchModal.onWillDismiss();
+
+      // if its for adding origin
+      if (role === "origin") {
+        this.onSetOrigin(data);
+      }
+      // if its for adding new destination
+      if (role === "destination") {
+        this.onSetDestination(data);
+      }
+    },
   },
 });
 </script>
 <style>
 .origin-button {
   margin: 10px auto;
+}
+.centered-text {
+  display: flex;
+  justify-content: center;
+  align-content: center;
+  align-items: center;
+  width: 100%;
 }
 </style>

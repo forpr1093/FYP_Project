@@ -1,36 +1,72 @@
 <template>
-  <ion-modal :is-open="isOpen">
-    <ion-content>
-      <ion-item class="searchbar-wrapper" color="none" lines="none">
-        <GMapAutocomplete placeholder="Search" class="auto-complete" slot="end">
-        </GMapAutocomplete>
-      </ion-item>
-      <ion-button class="search-button" expand="block">Search</ion-button>
-    </ion-content>
-  </ion-modal>
+  <ion-header>
+    <ion-toolbar>
+      <ion-buttons slot="end">
+        <ion-button @click="this.close">Close</ion-button>
+      </ion-buttons>
+    </ion-toolbar>
+  </ion-header>
+  <ion-content>
+    <ion-item class="searchbar-wrapper" color="none" lines="none">
+      <GMapAutocomplete
+        placeholder="Search"
+        class="auto-complete"
+        slot="end"
+        @place_changed="this.setPlace"
+      >
+      </GMapAutocomplete>
+    </ion-item>
+    <ion-button class="search-button" expand="block" @click="this.setLocation"
+      >Set Location</ion-button
+    >
+  </ion-content>
 </template>
 
 <script lang="ts">
 import { defineComponent } from "vue";
-import { IonModal, IonContent, IonButton, IonItem } from "@ionic/vue";
+import {
+  IonContent,
+  IonButton,
+  IonItem,
+  IonHeader,
+  IonToolbar,
+  modalController,
+} from "@ionic/vue";
 
 export default defineComponent({
-  components: { IonModal, IonContent, IonButton, IonItem },
-  props: ["isOpen"],
-  methods: {
-    // getAddressData(addressData, placeResultData, id) {
-    //   this.address = addressData;
-    // },
+  components: {
+    IonContent,
+    IonButton,
+    IonItem,
+    IonHeader,
+    IonToolbar,
   },
-  // mounted() {
-  //   const key = "AIzaSyBiGgsdmA1Z-7BD5npa_-LvOGsJMbjxJpw";
-  //   const googleMapScript = document.createElement("SCRIPT");
-  //   googleMapScript.setAttribute(
-  //     "src",
-  //     `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places`
-  //   );
-  //   document.head.appendChild(googleMapScript);
-  // },
+  props: ["choice"],
+  data() {
+    return {
+      isModalOpen: false,
+      coordinates: null,
+    };
+  },
+  methods: {
+    setPlace(event) {
+      const data = event;
+      this.coordinates = {
+        lng: data.geometry.location.lng(),
+        lat: data.geometry.location.lat(),
+      };
+    },
+    close() {
+      // not passing any coordinates while closing the modal
+      return modalController.dismiss(null, "close");
+    },
+    setLocation() {
+      if (this.coordinates != null) {
+      // pass the coordinates while closing the modal
+        return modalController.dismiss(this.coordinates, this.choice);
+      }
+    },
+  },
 });
 </script>
 
