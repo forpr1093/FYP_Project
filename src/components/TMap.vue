@@ -59,7 +59,12 @@ export default defineComponent({
 
       // set to local variable
       this.coor = { lng: origin.lng, lat: origin.lat };
-      // this.recalculateRoutes();
+
+      // move camera
+      this.map.easeTo({ center: this.coor });
+
+      // recalculate route with the new origin
+      this.recalculateRoutes(this.destinations);
 
       // marker on drag listener
       marker.on("dragend", () => {
@@ -73,7 +78,8 @@ export default defineComponent({
     },
 
     // add destination marker
-    addDestination(lngLat) {
+    addDestination(address, lngLat) {
+      console.log(lngLat);
       // new html element to make the marker visible
       const popup = new tt.Popup({ closeButton: false }).setHTML(
         '<b style="color:blue">Speedy\'s pizza</b>'
@@ -93,7 +99,7 @@ export default defineComponent({
       const temp = this.destinations;
       temp.push({
         id: this.markerCounter,
-        title: marker.getLngLat(),
+        title: address,
         marker: marker,
       });
 
@@ -102,6 +108,9 @@ export default defineComponent({
 
       // increase the markerCounter (id in list)
       this.markerCounter += 1;
+
+      // move the camera to the coordiantes
+      this.map.easeTo({ center: lngLat });
 
       this.recalculateRoutes(this.destinations);
     },
@@ -196,7 +205,9 @@ export default defineComponent({
         recalculateRoute: () => this.recalculateRoutes(this.destinations),
         toggleEdit: () => this.toggleEdit(),
         addOrigin: (coordinates) => this.addOrigin(coordinates),
-        addDestination: (coordinates) => this.addDestination(coordinates),
+        addDestination: (address, coordinates) =>
+          this.addDestination(address, coordinates),
+        mapRef: () => this.map,
       });
     },
 
@@ -220,7 +231,7 @@ export default defineComponent({
       // when the map is clicked, add marker
       map.on("click", (e) => {
         if (this.editable) {
-          this.addDestination(e.lngLat);
+          this.addDestination(e.lngLat, e.lngLat);
           map.easeTo({ center: e.lngLat });
         }
       });

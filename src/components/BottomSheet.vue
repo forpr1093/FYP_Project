@@ -10,7 +10,6 @@
     class="wrapper"
   >
     <ion-content class="ion-padding">
-      <ion-searchbar placeholder="Search"></ion-searchbar>
       <ion-item color="none" lines="none">
         <ion-text slot="end">Edit Mode</ion-text>
         <ion-toggle
@@ -19,16 +18,15 @@
           @ionChange="this.toggle($event)"
         ></ion-toggle>
       </ion-item>
+
+      <ion-text class="centered-text">{{ this.origin }}</ion-text>
       <ion-button
         expand="block"
         class="origin-button"
         @click="this.openSearchModal('origin')"
         >Set Origin</ion-button
       >
-      <ion-content style="height: 25%" :scroll-events="true">
-        <ion-text class="centered-text" v-if="this.destinations.length == 0">{{
-          this.origin
-        }}</ion-text>
+      <ion-content style="height: 25%">
         <ion-text class="centered-text" v-if="this.destinations.length == 0"
           >No destination has been added.</ion-text
         >
@@ -38,8 +36,8 @@
             @ionItemReorder="onReorder($event)"
           >
             <ion-item-sliding v-for="data in destinations" :key="data.id">
-              <ion-item>
-                <ion-label> test </ion-label>
+              <ion-item @click="() => this.onClickItem(data)">
+                <ion-label> {{ data.title }}</ion-label>
                 <ion-reorder slot="end"></ion-reorder>
               </ion-item>
               <ion-item-options @ionSwipe="this.onDelete(data)">
@@ -75,7 +73,6 @@ import {
   IonContent,
   IonItem,
   IonLabel,
-  IonSearchbar,
   IonButton,
   IonToggle,
   IonText,
@@ -91,7 +88,6 @@ export default defineComponent({
     IonModal,
     IonContent,
     IonItem,
-    IonSearchbar,
     IonReorder,
     IonReorderGroup,
     IonLabel,
@@ -101,7 +97,13 @@ export default defineComponent({
     IonList,
   },
   // receive addMarker method from main page
-  props: ["setOrigin", "setDestination", "recalculateRoute", "toggleEdit"],
+  props: [
+    "setOrigin",
+    "setDestination",
+    "recalculateRoute",
+    "toggleEdit",
+    "map",
+  ],
 
   computed: {
     ...mapGetters({
@@ -140,6 +142,12 @@ export default defineComponent({
     onSetDestination(coordinates) {
       this.setDestination(coordinates);
     },
+    // on click item
+    onClickItem(data) {
+      const lngLat = data.marker.getLngLat();
+      // move the camera to the location
+      this.map().easeTo({ center: lngLat });
+    },
     // fire to delete the destination
     onDelete(data) {
       let destArr = this.destinations;
@@ -155,7 +163,6 @@ export default defineComponent({
       this.$store.dispatch("destinations/addToDestinations", destArr);
       // draw new route with the new array
       this.recalculateRoute();
-      // destArr = destArr.filter((marker) => marker.id != data.id);
       // remove the draggedItem from the array (1 means 1 item from that index)
     },
 
@@ -176,6 +183,7 @@ export default defineComponent({
 
       // if its for adding origin
       if (role === "origin") {
+        console.log(data);
         this.onSetOrigin(data);
       }
       // if its for adding new destination

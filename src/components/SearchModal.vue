@@ -46,6 +46,7 @@ export default defineComponent({
     return {
       isModalOpen: false,
       coordinates: null,
+      address: null,
     };
   },
   methods: {
@@ -55,6 +56,7 @@ export default defineComponent({
         lng: data.geometry.location.lng(),
         lat: data.geometry.location.lat(),
       };
+      this.address = data.formatted_address;
     },
     close() {
       // not passing any coordinates while closing the modal
@@ -62,8 +64,11 @@ export default defineComponent({
     },
     setLocation() {
       if (this.coordinates != null) {
-      // pass the coordinates while closing the modal
-        return modalController.dismiss(this.coordinates, this.choice);
+        // pass the coordinates while closing the modal
+        return modalController.dismiss(
+          { address: this.address, coor: this.coordinates },
+          this.choice
+        );
       }
     },
   },

@@ -19,6 +19,7 @@
     :setDestination="this.setDestination"
     :recalculateRoute="this.recalculateRoute"
     :toggleEdit="this.toggleEdit"
+    :map="this.getMapRef"
   />
 </template>
 
@@ -58,11 +59,15 @@ export default defineComponent({
 
     // add origin
     setOrigin(origin) {
-      this.mapInterface.addOrigin(origin);
+      this.mapInterface.addOrigin(origin.coor);
     },
-    setDestination(destination) {
-      this.mapInterface.addDestination(destination);
+    setDestination(data) {
+      this.mapInterface.addDestination(data.address, data.coor);
     },
+    // get MapRef
+    getMapRef(){
+      return this.mapInterface.mapRef();
+    }
   },
   computed: {
     memories() {
