@@ -19,7 +19,7 @@
         ></ion-toggle>
       </ion-item>
 
-      <ion-text class="centered-text">{{ this.origin }}</ion-text>
+      <ion-text class="centered-text">{{ this.origin.title }}</ion-text>
       <ion-button
         expand="block"
         class="origin-button"
@@ -82,6 +82,7 @@ import {
 import { defineComponent } from "vue";
 import { mapGetters } from "vuex";
 import SearchModal from "./SearchModal.vue";
+import axios from "axios";
 
 export default defineComponent({
   components: {
@@ -113,6 +114,7 @@ export default defineComponent({
   },
   data() {
     return {
+      originAddress: null,
       reorderable: false,
       isModalOpen: false,
     };
@@ -146,7 +148,7 @@ export default defineComponent({
     onClickItem(data) {
       const lngLat = data.marker.getLngLat();
       // move the camera to the location
-      this.map().easeTo({ center: lngLat });
+      this.map().easeTo({ center: lngLat, zoom: 16.5 });
     },
     // fire to delete the destination
     onDelete(data) {
@@ -183,7 +185,6 @@ export default defineComponent({
 
       // if its for adding origin
       if (role === "origin") {
-        console.log(data);
         this.onSetOrigin(data);
       }
       // if its for adding new destination
@@ -191,6 +192,9 @@ export default defineComponent({
         this.onSetDestination(data);
       }
     },
+  },
+  mounted() {
+    // console.log(await this.getAddress());
   },
 });
 </script>

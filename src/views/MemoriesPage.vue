@@ -59,7 +59,8 @@ export default defineComponent({
 
     // add origin
     setOrigin(origin) {
-      this.mapInterface.addOrigin(origin.coor);
+      console.log(origin)
+      this.mapInterface.addOrigin(origin.address, origin.coor);
     },
     setDestination(data) {
       this.mapInterface.addDestination(data.address, data.coor);

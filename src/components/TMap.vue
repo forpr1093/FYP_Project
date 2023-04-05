@@ -1,14 +1,24 @@
 <template>
   <div id="map"></div>
+  <ion-toast
+    :is-open="this.isOpenToast"
+    message="Proccessing route...Spamming is not encouraged!"
+    :duration="1000"
+    @didDismiss="() => (this.isOpenToast = false)"
+  ></ion-toast>
 </template>
 
 <script lang="ts">
 import { defineComponent } from "vue";
+import { IonToast } from "@ionic/vue";
 import tt from "@tomtom-international/web-sdk-maps";
 import ttapi from "@tomtom-international/web-sdk-services";
 import { mapGetters } from "vuex";
 
 export default defineComponent({
+  components: {
+    IonToast,
+  },
   computed: {
     ...mapGetters({
       destinations: "destinations/destinations",
@@ -23,6 +33,8 @@ export default defineComponent({
       originMarker: null,
       markerCounter: 1,
       editable: false,
+      travelTimeInSecond: 0,
+      isOpenToast: false,
     };
   },
   methods: {
@@ -36,12 +48,30 @@ export default defineComponent({
       };
     },
 
+    reverseGeocoding(lat, lng) {
+      return new Promise((resolve) => {
+        fetch(
+          `https://api.tomtom.com/search/2/reverseGeocode/${lat},${lng}.json?key=0jVsF2y6TOdEGvkVUOvaswXIoSIzwiQ6&radius=100`
+        )
+          .then((response) => response.json())
+          .then((object) => {
+            const address = object.addresses[0].address.freeformAddress;
+            resolve(address);
+          });
+      });
+    },
+
+    async getAddressFromGeocoding(lat, lng) {
+      const address = await this.reverseGeocoding(lat, lng);
+      return address;
+    },
+
     // add marker to map
-    addOrigin(origin) {
+    async addOrigin(address, coor) {
       // create a html element for marker
       const element = document.createElement("div");
       element.className = "marker";
-
+      console.log(coor);
       if (this.originMarker) {
         this.originMarker.remove();
       }
@@ -50,27 +80,43 @@ export default defineComponent({
         draggable: true,
         element: element,
       })
-        .setLngLat([origin.lng, origin.lat])
+        .setLngLat([coor.lng, coor.lat])
         .addTo(this.map);
+
+      // push new marker into the arr
+      let title = address;
+      // reverse geocoding when the title is coordinates
+      if (typeof title !== "string") {
+        title = await this.getAddressFromGeocoding(
+          marker.getLngLat().lat,
+          marker.getLngLat().lng
+        );
+      }
+      const origin = { title: title, marker: marker };
 
       this.originMarker = marker;
       // add origin data to store
-      this.$store.dispatch("destinations/addOrigin", marker.getLngLat());
+      this.$store.dispatch("destinations/addOrigin", origin);
 
       // set to local variable
-      this.coor = { lng: origin.lng, lat: origin.lat };
+      this.coor = { lng: coor.lng, lat: coor.lat };
 
       // move camera
-      this.map.easeTo({ center: this.coor });
+      this.map.easeTo({ center: this.coor, zoom: 15 });
 
       // recalculate route with the new origin
       this.recalculateRoutes(this.destinations);
 
       // marker on drag listener
-      marker.on("dragend", () => {
+      marker.on("dragend", async () => {
         const lngLat = marker.getLngLat();
-        // store the modified coordinate
-        this.$store.dispatch("destinations/addOrigin", marker.getLngLat());
+        const title = await this.getAddressFromGeocoding(
+          lngLat.lat,
+          lngLat.lng
+        );
+        const origin = { title: title, marker: marker };
+        // store the modified origin
+        this.$store.dispatch("destinations/addOrigin", origin);
         this.coor = { lng: lngLat.lng, lat: lngLat.lat };
         this.recalculateRoutes(this.destinations);
         this.originMarker = marker;
@@ -78,8 +124,7 @@ export default defineComponent({
     },
 
     // add destination marker
-    addDestination(address, lngLat) {
-      console.log(lngLat);
+    async addDestination(address, lngLat) {
       // new html element to make the marker visible
       const popup = new tt.Popup({ closeButton: false }).setHTML(
         '<b style="color:blue">Speedy\'s pizza</b>'
@@ -97,9 +142,17 @@ export default defineComponent({
         .addTo(this.map);
       // push new marker into the arr
       const temp = this.destinations;
+      let title = address;
+      if (typeof title !== "string") {
+        console.log("notstring");
+        title = await this.getAddressFromGeocoding(
+          marker.getLngLat().lat,
+          marker.getLngLat().lng
+        );
+      }
       temp.push({
         id: this.markerCounter,
-        title: address,
+        title: title,
         marker: marker,
       });
 
@@ -139,9 +192,12 @@ export default defineComponent({
                 drivingtime: result.response.routeSummary.travelTimeInSeconds,
               };
             });
-            resultsArray.sort((a, b) => {
-              return a.drivingtime - b.drivingtime;
-            });
+            // resultsArray.sort((a, b) => {
+            //   return a.drivingtime - b.drivingtime;
+            // });
+            this.travelTime = 0;
+            resultsArray.forEach((i) => (this.travelTime += i.drivingtime));
+            console.log(this.travelTime);
             const sortedLocations = resultsArray.map((result) => {
               return result.location;
             });
@@ -190,6 +246,10 @@ export default defineComponent({
           .then((routeData) => {
             const geoJson = routeData.toGeoJson();
             this.drawRoute(geoJson, this.map);
+          })
+          .catch((error) => {
+            this.isOpenToast = true;
+            this.recalculateRoutes(destinations);
           });
       });
     },
@@ -204,7 +264,8 @@ export default defineComponent({
       this.$emit("interface", {
         recalculateRoute: () => this.recalculateRoutes(this.destinations),
         toggleEdit: () => this.toggleEdit(),
-        addOrigin: (coordinates) => this.addOrigin(coordinates),
+        addOrigin: (address, coordinates) =>
+          this.addOrigin(address, coordinates),
         addDestination: (address, coordinates) =>
           this.addDestination(address, coordinates),
         mapRef: () => this.map,
@@ -232,7 +293,6 @@ export default defineComponent({
       map.on("click", (e) => {
         if (this.editable) {
           this.addDestination(e.lngLat, e.lngLat);
-          map.easeTo({ center: e.lngLat });
         }
       });
     },
@@ -245,7 +305,7 @@ export default defineComponent({
   },
   mounted() {
     this.displayMap();
-    this.addOrigin({ lat: 3.1319, lng: 101.6841 });
+    this.addOrigin("Unknown Origin", { lat: 3.1319, lng: 101.6841 });
     this.emitInterface();
   },
 });
