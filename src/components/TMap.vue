@@ -57,7 +57,7 @@ export default defineComponent({
           .then((object) => {
             const address = object.addresses[0].address.freeformAddress;
             resolve(address);
-          });
+          }).catch(() => console.log("API OVERLIMIT!"));
       });
     },
 
