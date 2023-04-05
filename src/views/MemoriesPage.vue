@@ -1,3 +1,8 @@
+<!-- Programmer Name: Ang Jia Yue
+Program Name: Route
+ Description: Route Planning Mobile Application
+ First written on: 10 March 2023
+ Edited on: -->
 <template>
   <!-- <ion-list>
       <ion-item
@@ -59,16 +64,16 @@ export default defineComponent({
 
     // add origin
     setOrigin(origin) {
-      console.log(origin)
+      console.log(origin);
       this.mapInterface.addOrigin(origin.address, origin.coor);
     },
     setDestination(data) {
       this.mapInterface.addDestination(data.address, data.coor);
     },
     // get MapRef
-    getMapRef(){
+    getMapRef() {
       return this.mapInterface.mapRef();
-    }
+    },
   },
   computed: {
     memories() {

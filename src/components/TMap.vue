@@ -1,8 +1,13 @@
+<!-- Programmer Name: Ang Jia Yue
+Program Name: Routed
+ Description: Route Planning Mobile Application
+ First written on: 10 March 2023
+ Edited on: -->
 <template>
   <div id="map"></div>
   <ion-toast
     :is-open="this.isOpenToast"
-    message="Proccessing route...Spamming is not encouraged!"
+    message="API Request Fail, Please try again after a few second!"
     :duration="1000"
     @didDismiss="() => (this.isOpenToast = false)"
   ></ion-toast>
@@ -51,13 +56,14 @@ export default defineComponent({
     reverseGeocoding(lat, lng) {
       return new Promise((resolve) => {
         fetch(
-          `https://api.tomtom.com/search/2/reverseGeocode/${lat},${lng}.json?key=0jVsF2y6TOdEGvkVUOvaswXIoSIzwiQ6&radius=100`
+          `https://api.tomtom.com/search/2/reverseGeocode/${lat},${lng}.json?key=DfWYFPAus04XP2NXuFfqbpyA0h5a0Iu0&radius=100`
         )
           .then((response) => response.json())
           .then((object) => {
             const address = object.addresses[0].address.freeformAddress;
             resolve(address);
-          }).catch(() => console.log("API OVERLIMIT!"));
+          })
+          .catch(() => console.log("API OVERLIMIT!"));
       });
     },
 
@@ -176,7 +182,7 @@ export default defineComponent({
       });
 
       const callParameters = {
-        key: "0jVsF2y6TOdEGvkVUOvaswXIoSIzwiQ6",
+        key: "DfWYFPAus04XP2NXuFfqbpyA0h5a0Iu0",
         destinations: pointsForDestinations,
         origins: [this.convertToPoints(this.coor)],
       };
@@ -192,9 +198,9 @@ export default defineComponent({
                 drivingtime: result.response.routeSummary.travelTimeInSeconds,
               };
             });
-            // resultsArray.sort((a, b) => {
-            //   return a.drivingtime - b.drivingtime;
-            // });
+            resultsArray.sort((a, b) => {
+              return a.drivingtime - b.drivingtime;
+            });
             this.travelTime = 0;
             resultsArray.forEach((i) => (this.travelTime += i.drivingtime));
             console.log(this.travelTime);
@@ -240,7 +246,7 @@ export default defineComponent({
 
         ttapi.services
           .calculateRoute({
-            key: "0jVsF2y6TOdEGvkVUOvaswXIoSIzwiQ6",
+            key: "DfWYFPAus04XP2NXuFfqbpyA0h5a0Iu0",
             locations: sorted,
           })
           .then((routeData) => {
@@ -249,7 +255,6 @@ export default defineComponent({
           })
           .catch((error) => {
             this.isOpenToast = true;
-            this.recalculateRoutes(destinations);
           });
       });
     },
@@ -275,7 +280,7 @@ export default defineComponent({
     // display the map
     displayMap() {
       const map = tt.map({
-        key: "0jVsF2y6TOdEGvkVUOvaswXIoSIzwiQ6",
+        key: "DfWYFPAus04XP2NXuFfqbpyA0h5a0Iu0",
         container: "map", // Container ID
         center: [101.6841, 3.1319],
         zoom: 12,

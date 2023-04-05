@@ -1,3 +1,8 @@
+<!-- Programmer Name: Ang Jia Yue
+Program Name: Route
+ Description: Route Planning Mobile Application
+ First written on: 10 March 2023
+ Edited on: -->
 <template>
   <!-- set backdrop dismiss so it wont be dismiss while interacting with the map -->
   <ion-modal
