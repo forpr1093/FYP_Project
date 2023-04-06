@@ -24,14 +24,18 @@ Program Name: Route
         ></ion-toggle>
       </ion-item>
 
-      <ion-text class="centered-text">{{ this.origin.title }}</ion-text>
-      <ion-button
-        expand="block"
-        class="origin-button"
-        @click="this.openSearchModal('origin')"
-        >Set Origin</ion-button
-      >
-      <ion-content style="height: 25%">
+      <ion-item class="origin-wrapper">
+        <ion-text class="origin-text" slot="start">{{
+          this.origin.title
+        }}</ion-text>
+        <ion-button
+          slot="end"
+          class="origin-button"
+          @click="this.openSearchModal('origin')"
+          >Set Origin</ion-button
+        >
+      </ion-item>
+      <ion-content style="height: 20%">
         <ion-text class="centered-text" v-if="this.destinations.length == 0"
           >No destination has been added.</ion-text
         >
@@ -66,6 +70,19 @@ Program Name: Route
         @click="this.openSearchModal('destination')"
         >Add Destination</ion-button
       >
+      <ion-item class="origin-wrapper">
+        <ion-text slot="start">{{`Estimated Travel Time: ${this.travelTime}`}}</ion-text>
+        <ion-text slot="end">Optimized Route</ion-text>
+        <ion-toggle
+          slot="end"
+          class="toggle"
+          @ionChange="this.toggleOptimized($event)"
+        ></ion-toggle>
+      </ion-item>
+      <ion-item color="none" lines="none">
+        <ion-button slot="start" expand="block" size="default">Save Profile</ion-button>
+        <ion-button slot="end" size="default">load Profile</ion-button>
+      </ion-item>
     </ion-content>
   </ion-modal>
 </template>
@@ -115,6 +132,7 @@ export default defineComponent({
     ...mapGetters({
       destinations: "destinations/destinations",
       origin: "destinations/origin",
+      travelTime: "destinations/travelTime"
     }),
   },
   data() {
@@ -122,6 +140,7 @@ export default defineComponent({
       originAddress: null,
       reorderable: false,
       isModalOpen: false,
+      optimizedToggle: false,
     };
   },
   methods: {
@@ -136,7 +155,7 @@ export default defineComponent({
       this.$store.dispatch("destinations/addToDestinations", destArr);
 
       // redraw the route
-      this.recalculateRoute();
+      this.recalculateRoute(this.optimizedToggle);
       // handle the complete action of ionic reorder group
       // so it can be dragged again
       event.detail.complete();
@@ -169,13 +188,17 @@ export default defineComponent({
       // update the array
       this.$store.dispatch("destinations/addToDestinations", destArr);
       // draw new route with the new array
-      this.recalculateRoute();
+      this.recalculateRoute(this.optimizedToggle);
       // remove the draggedItem from the array (1 means 1 item from that index)
     },
 
     toggle() {
       this.toggleEdit();
       this.reorderable = !this.reorderable;
+    },
+    toggleOptimized(event) {
+      this.optimizedToggle = event.detail.checked;
+      this.recalculateRoute(this.optimizedToggle);
     },
     async openSearchModal(choice) {
       const searchModal = await modalController.create({
@@ -198,13 +221,15 @@ export default defineComponent({
       }
     },
   },
-  mounted() {
-    // console.log(await this.getAddress());
-  },
 });
 </script>
 <style>
 .origin-button {
+  margin: 10px auto;
+  height: 4vh;
+}
+.origin-text {
+  width: 70%;
   margin: 10px auto;
 }
 .centered-text {
@@ -213,5 +238,12 @@ export default defineComponent({
   align-content: center;
   align-items: center;
   width: 100%;
+}
+.save-button {
+  margin: 10px auto;
+  height: 6vh;
+}
+.origin-wrapper {
+  margin-bottom: 10px;
 }
 </style>

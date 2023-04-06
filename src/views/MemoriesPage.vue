@@ -53,8 +53,8 @@ export default defineComponent({
     },
 
     // cal the recalculateRoute method in Map component
-    recalculateRoute() {
-      this.mapInterface.recalculateRoute();
+    recalculateRoute(choice) {
+      this.mapInterface.recalculateRoute(choice);
     },
 
     // toggle edit mode
@@ -64,7 +64,6 @@ export default defineComponent({
 
     // add origin
     setOrigin(origin) {
-      console.log(origin);
       this.mapInterface.addOrigin(origin.address, origin.coor);
     },
     setDestination(data) {

@@ -40,6 +40,7 @@ export default defineComponent({
       editable: false,
       travelTimeInSecond: 0,
       isOpenToast: false,
+      autoSortRoute: true,
     };
   },
   methods: {
@@ -77,7 +78,6 @@ export default defineComponent({
       // create a html element for marker
       const element = document.createElement("div");
       element.className = "marker";
-      console.log(coor);
       if (this.originMarker) {
         this.originMarker.remove();
       }
@@ -111,7 +111,7 @@ export default defineComponent({
       this.map.easeTo({ center: this.coor, zoom: 15 });
 
       // recalculate route with the new origin
-      this.recalculateRoutes(this.destinations);
+      this.recalculateRoutes(this.autoSortRoute, this.destinations);
 
       // marker on drag listener
       marker.on("dragend", async () => {
@@ -124,7 +124,7 @@ export default defineComponent({
         // store the modified origin
         this.$store.dispatch("destinations/addOrigin", origin);
         this.coor = { lng: lngLat.lng, lat: lngLat.lat };
-        this.recalculateRoutes(this.destinations);
+        this.recalculateRoutes(this.autoSortRoute, this.destinations);
         this.originMarker = marker;
       });
     },
@@ -150,7 +150,6 @@ export default defineComponent({
       const temp = this.destinations;
       let title = address;
       if (typeof title !== "string") {
-        console.log("notstring");
         title = await this.getAddressFromGeocoding(
           marker.getLngLat().lat,
           marker.getLngLat().lng
@@ -171,13 +170,12 @@ export default defineComponent({
       // move the camera to the coordiantes
       this.map.easeTo({ center: lngLat });
 
-      this.recalculateRoutes(this.destinations);
+      this.recalculateRoutes(this.autoSortRoute, this.destinations);
     },
 
     sortDestinations(markers) {
       const pointsForDestinations = markers.map((item) => {
         // convert all coordinates data to other format
-        console.log(markers);
         return this.convertToPoints(item.marker.getLngLat());
       });
 
@@ -194,16 +192,32 @@ export default defineComponent({
             const results = matrixAPIResults.matrix[0];
             const resultsArray = results.map((result, index) => {
               return {
+                id: markers[index].id,
+                title: markers[index].title,
+                marker: markers[index].marker,
                 location: markers[index].marker.getLngLat(),
                 drivingtime: result.response.routeSummary.travelTimeInSeconds,
               };
             });
-            resultsArray.sort((a, b) => {
-              return a.drivingtime - b.drivingtime;
-            });
+            // if auto optimized is on
+            if (this.autoSortRoute) {
+              resultsArray.sort((a, b) => {
+                return a.drivingtime - b.drivingtime;
+              });
+              this.$store.dispatch(
+                "destinations/addToDestinations",
+                resultsArray
+              );
+            }
+            // culculate total travel time
             this.travelTime = 0;
             resultsArray.forEach((i) => (this.travelTime += i.drivingtime));
-            console.log(this.travelTime);
+
+            // save traveltime to store
+            this.$store.dispatch(
+              "destinations/addToTravelTime",
+              this.travelTime
+            );
             const sortedLocations = resultsArray.map((result) => {
               return result.location;
             });
@@ -239,24 +253,28 @@ export default defineComponent({
       });
     },
 
-    recalculateRoutes(destinations) {
-      this.sortDestinations(destinations).then((sorted) => {
-        console.log(sorted);
-        sorted.unshift(this.coor);
+    recalculateRoutes(choice, destinations) {
+      this.autoSortRoute = choice;
+      if (this.destinations.length != 0) {
+        this.sortDestinations(destinations).then(async (sorted) => {
+          sorted.unshift(this.coor);
 
-        ttapi.services
-          .calculateRoute({
-            key: "DfWYFPAus04XP2NXuFfqbpyA0h5a0Iu0",
-            locations: sorted,
-          })
-          .then((routeData) => {
-            const geoJson = routeData.toGeoJson();
-            this.drawRoute(geoJson, this.map);
-          })
-          .catch((error) => {
-            this.isOpenToast = true;
-          });
-      });
+          await setTimeout(() => {
+            ttapi.services
+              .calculateRoute({
+                key: "DfWYFPAus04XP2NXuFfqbpyA0h5a0Iu0",
+                locations: sorted,
+              })
+              .then((routeData) => {
+                const geoJson = routeData.toGeoJson();
+                this.drawRoute(geoJson, this.map);
+              })
+              .catch((error) => {
+                this.isOpenToast = true;
+              });
+          }, 1000);
+        });
+      }
     },
 
     // toggle edit mode
@@ -267,7 +285,8 @@ export default defineComponent({
     // create an interface to call the methods from the outside of the component
     emitInterface() {
       this.$emit("interface", {
-        recalculateRoute: () => this.recalculateRoutes(this.destinations),
+        recalculateRoute: (choice) =>
+          this.recalculateRoutes(choice, this.destinations),
         toggleEdit: () => this.toggleEdit(),
         addOrigin: (address, coordinates) =>
           this.addOrigin(address, coordinates),
@@ -305,7 +324,7 @@ export default defineComponent({
     // method to refresh map
     refreshMap() {
       this.originMarker.remove();
-      this.recalculateRoutes(this.destinations);
+      this.recalculateRoutes(this.autoSortRoute, this.destinations);
     },
   },
   mounted() {

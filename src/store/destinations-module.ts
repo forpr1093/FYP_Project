@@ -6,6 +6,7 @@ export default {
   state: {
     origin:null,
     destinations: [],
+    estimatedTravelTime: 0,
   },
   mutations: {
     UPDATE_ORIGIN(state, payload) {
@@ -13,6 +14,9 @@ export default {
     },
     UPDATE_DESTINATIONS(state, payload) {
       state.destinations = payload;
+    },
+    UPDATE_TRAVEL_TIME(state, payload) {
+      state.estimatedTravelTime = payload;
     },
   },
   actions: {
@@ -24,6 +28,11 @@ export default {
       const destinations = payload;
       context.commit("UPDATE_DESTINATIONS", destinations);
     },
+    addToTravelTime(context, payload) {
+      const travelTime = payload;
+      console.log(payload)
+      context.commit("UPDATE_TRAVEL_TIME", travelTime);
+    },
   },
   // getter
   getters: {
@@ -32,6 +41,9 @@ export default {
     },
     origin: function (state) {
       return state.origin;
+    },
+    travelTime: function (state) {
+      return state.estimatedTravelTime;
     },
   },
 };
