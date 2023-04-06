@@ -35,32 +35,45 @@ Program Name: Route
           >Set Origin</ion-button
         >
       </ion-item>
+
       <ion-content style="height: 20%">
-        <ion-text class="centered-text" v-if="this.destinations.length == 0"
-          >No destination has been added.</ion-text
+        <ion-slides
+          mode="md"
+          ref="slider"
+          :options="this.slideOption"
+          @ionSlideReachEnd="this.disableSwipeNext()"
         >
-        <ion-list v-else>
-          <ion-reorder-group
-            :disabled="!this.reorderable"
-            @ionItemReorder="onReorder($event)"
-          >
-            <ion-item-sliding v-for="data in destinations" :key="data.id">
-              <ion-item @click="() => this.onClickItem(data)">
-                <ion-label> {{ data.title }}</ion-label>
-                <ion-reorder slot="end"></ion-reorder>
-              </ion-item>
-              <ion-item-options @ionSwipe="this.onDelete(data)">
-                <ion-item-option
-                  color="danger"
-                  expandable
-                  @click="this.onDelete(data)"
-                >
-                  Delete
-                </ion-item-option>
-              </ion-item-options>
-            </ion-item-sliding>
-          </ion-reorder-group>
-        </ion-list>
+          <ion-slide>
+            <ion-text>test</ion-text>
+          </ion-slide>
+          <ion-slide>
+            <ion-text class="centered-text" v-if="this.destinations.length == 0"
+              >No destination has been added.</ion-text
+            >
+            <ion-list v-else style="width: 100%">
+              <ion-reorder-group
+                :disabled="!this.reorderable"
+                @ionItemReorder="onReorder($event)"
+              >
+                <ion-item-sliding v-for="data in destinations" :key="data.id">
+                  <ion-item @click="() => this.onClickItem(data)">
+                    <ion-label> {{ data.title }}</ion-label>
+                    <ion-reorder slot="end"></ion-reorder>
+                  </ion-item>
+                  <ion-item-options @ionSwipe="this.onDelete(data)">
+                    <ion-item-option
+                      color="danger"
+                      expandable
+                      @click="this.onDelete(data)"
+                    >
+                      Delete
+                    </ion-item-option>
+                  </ion-item-options>
+                </ion-item-sliding>
+              </ion-reorder-group>
+            </ion-list>
+          </ion-slide>
+        </ion-slides>
       </ion-content>
 
       <ion-button
@@ -71,7 +84,9 @@ Program Name: Route
         >Add Destination</ion-button
       >
       <ion-item class="origin-wrapper">
-        <ion-text slot="start">{{`Estimated Travel Time: ${this.travelTime}`}}</ion-text>
+        <ion-text slot="start">{{
+          `Estimated Travel Time: ${this.travelTime}`
+        }}</ion-text>
         <ion-text slot="end">Optimized Route</ion-text>
         <ion-toggle
           slot="end"
@@ -80,7 +95,9 @@ Program Name: Route
         ></ion-toggle>
       </ion-item>
       <ion-item color="none" lines="none">
-        <ion-button slot="start" expand="block" size="default">Save Profile</ion-button>
+        <ion-button slot="start" expand="block" size="default"
+          >Save Profile</ion-button
+        >
         <ion-button slot="end" size="default">load Profile</ion-button>
       </ion-item>
     </ion-content>
@@ -100,6 +117,8 @@ import {
   IonText,
   modalController,
   IonList,
+  IonSlides,
+  IonSlide,
 } from "@ionic/vue";
 import { defineComponent } from "vue";
 import { mapGetters } from "vuex";
@@ -118,6 +137,8 @@ export default defineComponent({
     IonToggle,
     IonText,
     IonList,
+    IonSlides,
+    IonSlide,
   },
   // receive addMarker method from main page
   props: [
@@ -132,7 +153,7 @@ export default defineComponent({
     ...mapGetters({
       destinations: "destinations/destinations",
       origin: "destinations/origin",
-      travelTime: "destinations/travelTime"
+      travelTime: "destinations/travelTime",
     }),
   },
   data() {
@@ -141,6 +162,9 @@ export default defineComponent({
       reorderable: false,
       isModalOpen: false,
       optimizedToggle: false,
+      slideOption: {
+        initialSlide: 1,
+      },
     };
   },
   methods: {
@@ -189,7 +213,9 @@ export default defineComponent({
       this.$store.dispatch("destinations/addToDestinations", destArr);
       // draw new route with the new array
       this.recalculateRoute(this.optimizedToggle);
-      // remove the draggedItem from the array (1 means 1 item from that index)
+    },
+    disableSwipeNext() {
+      console.log(this.$refs.slider.$el.getSwiper())
     },
 
     toggle() {
