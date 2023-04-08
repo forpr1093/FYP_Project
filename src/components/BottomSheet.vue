@@ -16,6 +16,13 @@ Program Name: Route
   >
     <ion-content class="ion-padding">
       <ion-item color="none" lines="none">
+        <ion-text>Route Incidents</ion-text>
+        <ion-checkbox
+          style="margin-left: 10px"
+          :checked="false"
+          @ionChange="this.onCheckIncidents($event)"
+        ></ion-checkbox>
+
         <ion-text slot="end">Edit Mode</ion-text>
         <ion-toggle
           slot="end"
@@ -25,7 +32,7 @@ Program Name: Route
       </ion-item>
 
       <ion-item class="origin-wrapper">
-        <ion-text class="origin-text" slot="start">{{
+        <ion-text class="origin-text" slot="start" @click="this.onClickItem(this.origin)">{{
           this.origin.title
         }}</ion-text>
         <ion-button
@@ -37,43 +44,39 @@ Program Name: Route
       </ion-item>
 
       <ion-content style="height: 20%">
-        <ion-slides
-          mode="md"
-          ref="slider"
-          :options="this.slideOption"
-          @ionSlideReachEnd="this.disableSwipeNext()"
+        <route-incident
+          v-if="this.showIncident == true"
+          :map="this.map"
+          style="width: 100%; overflow: hidden"
         >
-          <ion-slide>
-            <ion-text>test</ion-text>
-          </ion-slide>
-          <ion-slide>
-            <ion-text class="centered-text" v-if="this.destinations.length == 0"
-              >No destination has been added.</ion-text
+        </route-incident>
+        <ion-content v-else>
+          <ion-text class="centered-text" v-if="this.destinations.length == 0"
+            >No destination has been added.</ion-text
+          >
+          <ion-list v-else style="width: 100%">
+            <ion-reorder-group
+              :disabled="!this.reorderable"
+              @ionItemReorder="onReorder($event)"
             >
-            <ion-list v-else style="width: 100%">
-              <ion-reorder-group
-                :disabled="!this.reorderable"
-                @ionItemReorder="onReorder($event)"
-              >
-                <ion-item-sliding v-for="data in destinations" :key="data.id">
-                  <ion-item @click="() => this.onClickItem(data)">
-                    <ion-label> {{ data.title }}</ion-label>
-                    <ion-reorder slot="end"></ion-reorder>
-                  </ion-item>
-                  <ion-item-options @ionSwipe="this.onDelete(data)">
-                    <ion-item-option
-                      color="danger"
-                      expandable
-                      @click="this.onDelete(data)"
-                    >
-                      Delete
-                    </ion-item-option>
-                  </ion-item-options>
-                </ion-item-sliding>
-              </ion-reorder-group>
-            </ion-list>
-          </ion-slide>
-        </ion-slides>
+              <ion-item-sliding v-for="data in destinations" :key="data.id">
+                <ion-item @click="() => this.onClickItem(data)">
+                  <ion-label> {{ data.title }}</ion-label>
+                  <ion-reorder slot="end"></ion-reorder>
+                </ion-item>
+                <ion-item-options @ionSwipe="this.onDelete(data)">
+                  <ion-item-option
+                    color="danger"
+                    expandable
+                    @click="this.onDelete(data)"
+                  >
+                    Delete
+                  </ion-item-option>
+                </ion-item-options>
+              </ion-item-sliding>
+            </ion-reorder-group>
+          </ion-list>
+        </ion-content>
       </ion-content>
 
       <ion-button
@@ -117,8 +120,7 @@ import {
   IonText,
   modalController,
   IonList,
-  IonSlides,
-  IonSlide,
+  IonCheckbox,
 } from "@ionic/vue";
 import { defineComponent } from "vue";
 import { mapGetters } from "vuex";
@@ -137,8 +139,7 @@ export default defineComponent({
     IonToggle,
     IonText,
     IonList,
-    IonSlides,
-    IonSlide,
+    IonCheckbox,
   },
   // receive addMarker method from main page
   props: [
@@ -165,6 +166,7 @@ export default defineComponent({
       slideOption: {
         initialSlide: 1,
       },
+      showIncident: false,
     };
   },
   methods: {
@@ -214,9 +216,9 @@ export default defineComponent({
       // draw new route with the new array
       this.recalculateRoute(this.optimizedToggle);
     },
-    disableSwipeNext() {
-      console.log(this.$refs.slider.$el.getSwiper())
-    },
+    // disableSwipeNext() {
+    //   console.log(this.$refs.slider.$el.getSwiper());
+    // },
 
     toggle() {
       this.toggleEdit();
@@ -245,6 +247,9 @@ export default defineComponent({
       if (role === "destination") {
         this.onSetDestination(data);
       }
+    },
+    onCheckIncidents(event: CustomEvent) {
+      this.showIncident = event.detail.checked;
     },
   },
 });

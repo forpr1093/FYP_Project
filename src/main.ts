@@ -34,6 +34,7 @@ import "./theme/maps.css";
 import BaseLayout from "./components/base/BaseLayout.vue";
 import BottomSheet from "./components/BottomSheet.vue";
 import SearchModal from "./components/SearchModal.vue";
+import RouteIncident from "./components/RouteIncident.vue";
 import VueGoogleMaps from "@fawmi/vue-google-maps";
 import store from "./store";
 
@@ -42,6 +43,7 @@ const app = createApp(App).use(IonicVue).use(router).use(store);
 app.component("base-layout", BaseLayout);
 app.component("bottom-sheet", BottomSheet);
 app.component("search-modal", SearchModal);
+app.component("route-incident", RouteIncident);
 
 router.isReady().then(() => {
   app
