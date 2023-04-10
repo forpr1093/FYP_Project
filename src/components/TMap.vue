@@ -2,7 +2,7 @@
 Program Name: Routed
  Description: Route Planning Mobile Application
  First written on: 10 March 2023
- Edited on: -->
+ Edited on: 10 April 2023-->
 <template>
   <div id="map"></div>
   <ion-toast
@@ -41,6 +41,7 @@ export default defineComponent({
       travelTimeInSecond: 0,
       isOpenToast: false,
       autoSortRoute: true,
+      markerColor: null,
     };
   },
   methods: {
@@ -129,14 +130,24 @@ export default defineComponent({
       });
     },
 
+    // generate color for each destinations for better visibility
+    generateRandomHexColor() {
+      const randomColor = `rgb(${Math.floor(256 * Math.random())}, ${Math.floor(
+        Math.random() * (143 - 130) + 130
+      )}, ${Math.floor(256 * Math.random())})`;
+
+      return randomColor;
+    },
+
     // add destination marker
     async addDestination(address, lngLat) {
       // new html element to make the marker visible
-      const popup = new tt.Popup({ closeButton: false }).setHTML(
-        '<b style="color:blue">Speedy\'s pizza</b>'
-      );
       const element = document.createElement("div");
       element.className = "destination-marker";
+      // get marker color
+      const markerColor = this.generateRandomHexColor();
+      // assign it to the marker
+      element.style.backgroundColor = markerColor;
 
       const marker = new tt.Marker({
         draggable: false,
@@ -144,7 +155,6 @@ export default defineComponent({
         anchor: "bottom",
       })
         .setLngLat(lngLat)
-        .setPopup(popup)
         .addTo(this.map);
       // push new marker into the arr
       const temp = this.destinations;
@@ -159,6 +169,7 @@ export default defineComponent({
         id: this.markerCounter,
         title: title,
         marker: marker,
+        color: markerColor,
       });
 
       //call the action to update the array in store
@@ -190,11 +201,13 @@ export default defineComponent({
           .matrixRouting(callParameters)
           .then((matrixAPIResults) => {
             const results = matrixAPIResults.matrix[0];
+            // get the result Array from the api
             const resultsArray = results.map((result, index) => {
               return {
                 id: markers[index].id,
                 title: markers[index].title,
                 marker: markers[index].marker,
+                color: markers[index].color,
                 location: markers[index].marker.getLngLat(),
                 drivingtime: result.response.routeSummary.travelTimeInSeconds,
               };
@@ -213,10 +226,18 @@ export default defineComponent({
             this.travelTime = 0;
             resultsArray.forEach((i) => (this.travelTime += i.drivingtime));
 
+            // convert second into hour and minute format
+            const h = Math.floor(this.travelTime / 3600);
+            const m = Math.floor((this.travelTime % 3600) / 60);
+
+            const hDisplay = h > 0 ? h + (h == 1 ? " hour, " : " hours, ") : "";
+            const mDisplay =
+              m > 0 ? m + (m == 1 ? " minute, " : " minutes ") : "";
+
             // save traveltime to store
             this.$store.dispatch(
               "destinations/addToTravelTime",
-              this.travelTime
+              hDisplay + mDisplay
             );
             const sortedLocations = resultsArray.map((result) => {
               return result.location;
@@ -255,26 +276,24 @@ export default defineComponent({
 
     recalculateRoutes(choice, destinations) {
       this.autoSortRoute = choice;
-      if (this.destinations.length != 0) {
-        this.sortDestinations(destinations).then(async (sorted) => {
-          sorted.unshift(this.coor);
+      this.sortDestinations(destinations).then(async (sorted) => {
+        sorted.unshift(this.coor);
 
-          await setTimeout(() => {
-            ttapi.services
-              .calculateRoute({
-                key: "DfWYFPAus04XP2NXuFfqbpyA0h5a0Iu0",
-                locations: sorted,
-              })
-              .then((routeData) => {
-                const geoJson = routeData.toGeoJson();
-                this.drawRoute(geoJson, this.map);
-              })
-              .catch((error) => {
-                this.isOpenToast = true;
-              });
-          }, 1000);
-        });
-      }
+        await setTimeout(() => {
+          ttapi.services
+            .calculateRoute({
+              key: "DfWYFPAus04XP2NXuFfqbpyA0h5a0Iu0",
+              locations: sorted,
+            })
+            .then((routeData) => {
+              const geoJson = routeData.toGeoJson();
+              this.drawRoute(geoJson, this.map);
+            })
+            .catch(() => {
+              this.isOpenToast = true;
+            });
+        }, 2000);
+      });
     },
 
     // toggle edit mode

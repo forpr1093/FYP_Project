@@ -4,16 +4,12 @@ import MemoriesPage from "../views/MemoriesPage.vue";
 
 const routes: Array<RouteRecordRaw> = [
   {
-    path: '/',
-    redirect: '/memories',
+    path: "/",
+    redirect: "/memories",
   },
   {
-    path: '/memories',
+    path: "/memories",
     component: MemoriesPage,
-  },
-  {
-    path: '/memories/:id',
-    component: () => import('../views/MemoryDetail.vue'),
   },
 ];
 

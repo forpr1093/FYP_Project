@@ -2,7 +2,7 @@
 Program Name: Route
  Description: Route Planning Mobile Application
  First written on: 10 March 2023
- Edited on: -->
+ Edited on: 10 April 2023-->
 <template>
   <!-- set backdrop dismiss so it wont be dismiss while interacting with the map -->
   <ion-modal
@@ -27,17 +27,22 @@ Program Name: Route
         <ion-toggle
           slot="end"
           class="toggle"
+          :disabled="this.loading"
           @ionChange="this.toggle($event)"
         ></ion-toggle>
       </ion-item>
 
       <ion-item class="origin-wrapper">
-        <ion-text class="origin-text" slot="start" @click="this.onClickItem(this.origin)">{{
-          this.origin.title
-        }}</ion-text>
+        <ion-text
+          class="origin-text"
+          slot="start"
+          @click="this.onClickItem(this.origin)"
+          >{{ this.origin.title }}</ion-text
+        >
         <ion-button
           slot="end"
           class="origin-button"
+          :disabled="this.loading"
           @click="this.openSearchModal('origin')"
           >Set Origin</ion-button
         >
@@ -59,9 +64,18 @@ Program Name: Route
               :disabled="!this.reorderable"
               @ionItemReorder="onReorder($event)"
             >
-              <ion-item-sliding v-for="data in destinations" :key="data.id">
-                <ion-item @click="() => this.onClickItem(data)">
-                  <ion-label> {{ data.title }}</ion-label>
+              <ion-item-sliding
+                :disabled="this.loading"
+                v-for="data in destinations"
+                :key="data.id"
+              >
+                <ion-item
+                  :class="data.title.length >= 50 ? 'play' : 'none'"
+                  @click="() => this.onClickItem(data)"
+                >
+                  <ion-label :style="{ color: data.color }">
+                    {{ data.title }}</ion-label
+                  >
                   <ion-reorder slot="end"></ion-reorder>
                 </ion-item>
                 <ion-item-options @ionSwipe="this.onDelete(data)">
@@ -87,21 +101,35 @@ Program Name: Route
         >Add Destination</ion-button
       >
       <ion-item class="origin-wrapper">
-        <ion-text slot="start">{{
-          `Estimated Travel Time: ${this.travelTime}`
-        }}</ion-text>
+        <img
+          style="width: 30px; height: 30px; margin-right: 10px"
+          src="../theme/clock.png"
+        />
+        <ion-text>{{ this.travelTime }}</ion-text>
         <ion-text slot="end">Optimized Route</ion-text>
         <ion-toggle
           slot="end"
           class="toggle"
+          :disabled="this.loading"
           @ionChange="this.toggleOptimized($event)"
         ></ion-toggle>
       </ion-item>
       <ion-item color="none" lines="none">
-        <ion-button slot="start" expand="block" size="default"
+        <ion-button
+          slot="start"
+          expand="block"
+          size="default"
+          :disabled="this.loading"
+          @click="this.onSaveProfile()"
           >Save Profile</ion-button
         >
-        <ion-button slot="end" size="default">load Profile</ion-button>
+        <ion-button
+          :disabled="this.loading"
+          slot="end"
+          size="default"
+          @click="this.showProfileList()"
+          >load Profile</ion-button
+        >
       </ion-item>
     </ion-content>
   </ion-modal>
@@ -125,7 +153,9 @@ import {
 import { defineComponent } from "vue";
 import { mapGetters } from "vuex";
 import SearchModal from "./SearchModal.vue";
-import axios from "axios";
+import ProfileListModal from "./ProfileListModal.vue";
+import { Preferences } from "@capacitor/preferences";
+import { v4 as uuidv4 } from "uuid";
 
 export default defineComponent({
   components: {
@@ -167,6 +197,7 @@ export default defineComponent({
         initialSlide: 1,
       },
       showIncident: false,
+      loading: false,
     };
   },
   methods: {
@@ -228,6 +259,7 @@ export default defineComponent({
       this.optimizedToggle = event.detail.checked;
       this.recalculateRoute(this.optimizedToggle);
     },
+    // open the search modal for location searching
     async openSearchModal(choice) {
       const searchModal = await modalController.create({
         component: SearchModal,
@@ -248,6 +280,89 @@ export default defineComponent({
         this.onSetDestination(data);
       }
     },
+
+    // save profile
+    async onSaveProfile() {
+      // get current origin and destinations coordinates
+      const originCoor = this.origin.marker.getLngLat();
+      const destinationsData: object[] = [];
+      // push destinations coordinates into an array
+      this.destinations.map((i) =>
+        destinationsData.push({ address: i.title, coor: i.marker.getLngLat() })
+      );
+
+      // assign profileNmae based on origin and destination
+      const profileName =
+        (this.origin.title == "Unknown Origin"
+          ? "Unknown Origin"
+          : this.origin.title.split(",")[0] + this.origin.title.split(",")[1]) +
+        " - " +
+        this.destinations[this.destinations.length - 1].title.split(",")[0] +
+        this.destinations[this.destinations.length - 1].title.split(",")[1];
+
+      // read the existing data in local storage
+      let temp: object[] = [];
+      const { value } = await Preferences.get({ key: "profile" });
+      const result: string = value!;
+      if (JSON.parse(result)) {
+        console.log("found");
+        temp = JSON.parse(result).profile;
+      }
+      // declare new value
+      const newValue = {
+        id: uuidv4(),
+        name: profileName,
+        origin: { address: this.origin.title, coor: originCoor },
+        destinations: destinationsData,
+      };
+
+      temp.push(newValue);
+      // convert into json
+      const json = { profile: temp };
+
+      // store the data
+      await Preferences.set({
+        key: "profile",
+        value: JSON.stringify(json),
+      });
+    },
+
+    // write promise for delay adding each destinations to have better performances
+    setDestinationWithDelay(destination) {
+      return new Promise((resolve) =>
+        setTimeout(() => {
+          resolve(this.onSetDestination(destination));
+        }, 1000)
+      );
+    },
+
+    async showProfileList() {
+      const ProfileList = await modalController.create({
+        component: ProfileListModal,
+      });
+      ProfileList.present();
+
+      // get the selected profile
+      const { data } = await ProfileList.onWillDismiss();
+
+      // if there is profile
+      if (data != null) {
+        this.loading = true;
+        // remove all destination marker from map
+        this.destinations.map((i) => i.marker.remove());
+        this.$store.dispatch("destinations/addToDestinations", []);
+        // set origin
+        this.onSetOrigin(data.origin);
+        // remove all destinations in store
+
+        for (let i = 0; i < data.destinations.length; i++) {
+          await this.setDestinationWithDelay(data.destinations[i]);
+        }
+
+        this.loading = false;
+      }
+    },
+    // handle the incidents checkbox
     onCheckIncidents(event: CustomEvent) {
       this.showIncident = event.detail.checked;
     },
@@ -276,5 +391,24 @@ export default defineComponent({
 }
 .origin-wrapper {
   margin-bottom: 10px;
+}
+
+.play {
+  animation: ma 7s 0s infinite linear;
+  animation-delay: 3s;
+}
+@keyframes ma {
+  0% {
+    margin-left: 0px;
+  }
+  50% {
+    margin-left: -500px;
+  }
+  50.01% {
+    margin-left: 0px;
+  }
+  100% {
+    margin-left: 0px;
+  }
 }
 </style>

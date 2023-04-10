@@ -2,7 +2,7 @@
 Program Name: Route
  Description: Route Planning Mobile Application
  First written on: 10 March 2023
- Edited on: -->
+ Edited on: 10 April 2023-->
 <template>
   <!-- <ion-list>
       <ion-item
@@ -31,6 +31,7 @@ Program Name: Route
 <script lang="ts">
 import { defineComponent, ref } from "vue";
 import TMap from "../components/TMap.vue";
+import { Preferences } from "@capacitor/preferences";
 // defineCOmponent to prevent type error of $store
 export default defineComponent({
   components: {
@@ -72,11 +73,6 @@ export default defineComponent({
     // get MapRef
     getMapRef() {
       return this.mapInterface.mapRef();
-    },
-  },
-  computed: {
-    memories() {
-      return this.$store.getters.memories;
     },
   },
 });

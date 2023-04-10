@@ -1,9 +1,22 @@
+<!-- Programmer Name: Ang Jia Yue
+Program Name: Route
+ Description: Route Planning Mobile Application
+ First written on: 10 March 2023
+ Edited on: 10 April 2023 -->
 <template>
   <ion-list>
     <ion-button expand="block" @click="this.getIncidentDetail()">
       Refresh Incidents
     </ion-button>
-    <ion-item v-for="incident in incidents" :key="incident.id" lines="full">
+    <ion-label class="centered-text" v-if="incidents.length == 0">
+      No Incidents Found in the Area.
+    </ion-label>
+    <ion-item
+      v-else
+      v-for="incident in incidents"
+      :key="incident.id"
+      lines="full"
+    >
       <IonGrid>
         <IonRow
           style="align-items: center"
@@ -23,9 +36,14 @@
           @click="this.moveCamera(incident.details.geometry.coordinates[0], 20)"
         >
           <ion-label> from:</ion-label>
-          <ion-text style="margin-left: 10px">{{
-            incident.details.properties?.from
-          }}</ion-text>
+          <ion-text
+            style="
+              margin-left: 10px;
+              text-decoration: underline;
+              color: cadetblue;
+            "
+            >{{ incident.details.properties?.from }}</ion-text
+          >
         </IonRow>
         <IonRow
           style="padding: 10px 0px 5px 0px"
@@ -39,9 +57,14 @@
           "
         >
           <ion-label> to: </ion-label>
-          <ion-text style="margin-left: 29px">{{
-            incident.details.properties?.to
-          }}</ion-text>
+          <ion-text
+            style="
+              margin-left: 29px;
+              text-decoration: underline;
+              color: cadetblue;
+            "
+            >{{ incident.details.properties?.to }}</ion-text
+          >
         </IonRow>
       </IonGrid>
     </ion-item>
@@ -62,6 +85,7 @@ import {
 import tt from "@tomtom-international/web-sdk-maps";
 import ttapi from "@tomtom-international/web-sdk-services";
 import { mapGetters } from "vuex";
+import { Preferences } from "@capacitor/preferences";
 
 export default defineComponent({
   components: {
@@ -146,5 +170,15 @@ export default defineComponent({
   width: 30px;
   height: 30px;
   border-radius: 20px;
+}
+
+.centered-text {
+  display: flex;
+  justify-content: center;
+  align-content: center;
+  align-items: center;
+  width: 100%;
+  margin-top: 30px;
+  margin-bottom: 20px;
 }
 </style>
