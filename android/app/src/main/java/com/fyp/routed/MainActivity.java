@@ -1,4 +1,4 @@
-package io.ionic.starter;
+package com.fyp.routed;
 
 import com.getcapacitor.BridgeActivity;
 

@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">testapp</string>
-    <string name="title_activity_main">testapp</string>
-    <string name="package_name">io.ionic.starter</string>
-    <string name="custom_url_scheme">io.ionic.starter</string>
+    <string name="app_name">Routed</string>
+    <string name="title_activity_main">Routed</string>
+    <string name="package_name">com.fyp.routed</string>
+    <string name="custom_url_scheme">com.fyp.routed</string>
 </resources>

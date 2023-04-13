@@ -133,6 +133,13 @@ Program Name: Route
       </ion-item>
     </ion-content>
   </ion-modal>
+
+  <ion-toast
+    :is-open="this.isOpenToast"
+    :message="this.toastMessage"
+    :duration="2000"
+    @didDismiss="() => (this.isOpenToast = false)"
+  ></ion-toast>
 </template>
 
 <script lang="ts">
@@ -198,6 +205,8 @@ export default defineComponent({
       },
       showIncident: false,
       loading: false,
+      isOpenToast: false,
+      toastMessage: "",
     };
   },
   methods: {
@@ -325,6 +334,9 @@ export default defineComponent({
         key: "profile",
         value: JSON.stringify(json),
       });
+
+      this.toastMessage = "Profile Saved";
+      this.isOpenToast = true;
     },
 
     // write promise for delay adding each destinations to have better performances
