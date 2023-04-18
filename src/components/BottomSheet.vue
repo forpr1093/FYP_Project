@@ -78,7 +78,7 @@ Program Name: Route
                   >
                   <ion-reorder slot="end"></ion-reorder>
                 </ion-item>
-                <ion-item-options @ionSwipe="this.onDelete(data)">
+                <ion-item-options side="end" @ionSwipe="this.onDelete(data)">
                   <ion-item-option
                     color="danger"
                     expandable
@@ -156,6 +156,10 @@ import {
   modalController,
   IonList,
   IonCheckbox,
+  IonItemSliding,
+  IonItemOption,
+  IonItemOptions,
+  IonToast,
 } from "@ionic/vue";
 import { defineComponent } from "vue";
 import { mapGetters } from "vuex";
@@ -166,6 +170,8 @@ import { v4 as uuidv4 } from "uuid";
 
 export default defineComponent({
   components: {
+    IonToast,
+    IonItemSliding,
     IonModal,
     IonContent,
     IonItem,
@@ -177,6 +183,8 @@ export default defineComponent({
     IonText,
     IonList,
     IonCheckbox,
+    IonItemOption,
+    IonItemOptions,
   },
   // receive addMarker method from main page
   props: [
@@ -292,51 +300,61 @@ export default defineComponent({
 
     // save profile
     async onSaveProfile() {
-      // get current origin and destinations coordinates
-      const originCoor = this.origin.marker.getLngLat();
-      const destinationsData: object[] = [];
-      // push destinations coordinates into an array
-      this.destinations.map((i) =>
-        destinationsData.push({ address: i.title, coor: i.marker.getLngLat() })
-      );
+      try {
+        // get current origin and destinations coordinates
+        const originCoor = this.origin.marker.getLngLat();
+        const destinationsData: object[] = [];
+        // push destinations coordinates into an array
+        this.destinations.map((i) =>
+          destinationsData.push({
+            address: i.title,
+            coor: i.marker.getLngLat(),
+          })
+        );
 
-      // assign profileNmae based on origin and destination
-      const profileName =
-        (this.origin.title == "Unknown Origin"
-          ? "Unknown Origin"
-          : this.origin.title.split(",")[0] + this.origin.title.split(",")[1]) +
-        " - " +
-        this.destinations[this.destinations.length - 1].title.split(",")[0] +
-        this.destinations[this.destinations.length - 1].title.split(",")[1];
+        // assign profileNmae based on origin and destination
+        const profileName =
+          (this.origin.title == "Unknown Origin"
+            ? "Unknown Origin"
+            : this.origin.title.split(",")[0] +
+              this.origin.title.split(",")[1]) +
+          " - " +
+          this.destinations[this.destinations.length - 1].title.split(",")[0] +
+          this.destinations[this.destinations.length - 1].title.split(",")[1];
 
-      // read the existing data in local storage
-      let temp: object[] = [];
-      const { value } = await Preferences.get({ key: "profile" });
-      const result: string = value!;
-      if (JSON.parse(result)) {
-        console.log("found");
-        temp = JSON.parse(result).profile;
+        // read the existing data in local storage
+        let temp: object[] = [];
+        const { value } = await Preferences.get({ key: "profile" });
+        const result: string = value!;
+        if (JSON.parse(result)) {
+          console.log("found");
+          temp = JSON.parse(result).profile;
+        }
+        // declare new value
+        const newValue = {
+          id: uuidv4(),
+          name: profileName,
+          origin: { address: this.origin.title, coor: originCoor },
+          destinations: destinationsData,
+        };
+
+        temp.push(newValue);
+        // convert into json
+        const json = { profile: temp };
+
+        // store the data
+        await Preferences.set({
+          key: "profile",
+          value: JSON.stringify(json),
+        });
+
+        this.toastMessage = "Profile Saved";
+        this.isOpenToast = true;
+      } catch (err) {
+        this.toastMessage = "No Destination is added";
+        this.isOpenToast = true;
+        
       }
-      // declare new value
-      const newValue = {
-        id: uuidv4(),
-        name: profileName,
-        origin: { address: this.origin.title, coor: originCoor },
-        destinations: destinationsData,
-      };
-
-      temp.push(newValue);
-      // convert into json
-      const json = { profile: temp };
-
-      // store the data
-      await Preferences.set({
-        key: "profile",
-        value: JSON.stringify(json),
-      });
-
-      this.toastMessage = "Profile Saved";
-      this.isOpenToast = true;
     },
 
     // write promise for delay adding each destinations to have better performances

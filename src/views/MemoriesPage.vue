@@ -29,9 +29,8 @@ Program Name: Route
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from "vue";
+import { defineComponent } from "vue";
 import TMap from "../components/TMap.vue";
-import { Preferences } from "@capacitor/preferences";
 // defineCOmponent to prevent type error of $store
 export default defineComponent({
   components: {

@@ -75,7 +75,6 @@ import { defineComponent } from "vue";
 import {
   IonGrid,
   IonRow,
-  IonTitle,
   IonList,
   IonItem,
   IonLabel,
@@ -85,7 +84,6 @@ import {
 import tt from "@tomtom-international/web-sdk-maps";
 import ttapi from "@tomtom-international/web-sdk-services";
 import { mapGetters } from "vuex";
-import { Preferences } from "@capacitor/preferences";
 
 export default defineComponent({
   components: {

@@ -269,7 +269,7 @@ export default defineComponent({
         },
         paint: {
           "line-color": "cyan",
-          "line-width": 4,
+          "line-width": 3,
         },
       });
     },
