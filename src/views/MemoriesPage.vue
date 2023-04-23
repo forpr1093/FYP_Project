@@ -4,20 +4,6 @@ Program Name: Route
  First written on: 10 March 2023
  Edited on: 10 April 2023-->
 <template>
-  <!-- <ion-list>
-      <ion-item
-        v-for="memory in memories"
-        :router-link="`/memories/${memory.id}`"
-        :key="memory.id"
-      >
-        <ion-thumbnail slot="start">
-          <ion-img :src="memory.image" :alt="memory.title"></ion-img>
-        </ion-thumbnail>
-        <ion-label>
-          {{ memory.title }}
-        </ion-label>
-      </ion-item>
-    </ion-list> -->
   <TMap @interface="this.getMapInterface" />
   <bottom-sheet
     :setOrigin="this.setOrigin"

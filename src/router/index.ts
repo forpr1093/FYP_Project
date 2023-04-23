@@ -1,3 +1,8 @@
+//  Programmer Name: Ang Jia Yue
+// Program Name: Routed
+//  Description: Route Planning Mobile Application
+//  First written on: 10 March 2023
+//  Edited on: 10 April 2023
 import { createRouter, createWebHistory } from "@ionic/vue-router";
 import { RouteRecordRaw } from "vue-router";
 import MemoriesPage from "../views/MemoriesPage.vue";

@@ -1,10 +1,15 @@
-// destinations module that store array of destinations and handle changes 
+//  Programmer Name: Ang Jia Yue
+// Program Name: Routed
+//  Description: Route Planning Mobile Application
+//  First written on: 10 March 2023
+//  Edited on: 10 April 2023
+// destinations module that store array of destinations and handle changes
 // better performances than using props to transfer data between components since watcher is needed
 export default {
   // to access properties with dot
   namespaced: true,
   state: {
-    origin:null,
+    origin: null,
     destinations: [],
     estimatedTravelTime: 0,
   },
@@ -20,7 +25,7 @@ export default {
     },
   },
   actions: {
-    addOrigin(context, payload){
+    addOrigin(context, payload) {
       const origin = payload;
       context.commit("UPDATE_ORIGIN", origin);
     },
@@ -30,7 +35,7 @@ export default {
     },
     addToTravelTime(context, payload) {
       const travelTime = payload;
-      console.log(payload)
+      console.log(payload);
       context.commit("UPDATE_TRAVEL_TIME", travelTime);
     },
   },
